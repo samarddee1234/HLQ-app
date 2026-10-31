@@ -12,6 +12,7 @@ export default function Register({ profile, onDone }) {
     gender: '',
     grade: '',
     category: '',
+    batch: '',        // <--- เพิ่มบรรทัดนี้ลงไป
     group_id: '',
     phone: '',
     facebook: '',
@@ -31,6 +32,7 @@ export default function Register({ profile, onDone }) {
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
   const isMurabbi = form.requested_role === 'murabbi'
+  const isAlumni = form.requested_role === 'alumni'
 
   // กรองกลุ่มตาม เพศ, ระดับชั้น และ สายกลุ่ม ที่นักเรียนเลือก
   const filteredGroups = useMemo(() => {
@@ -56,8 +58,9 @@ export default function Register({ profile, onDone }) {
       .update({
         full_name: form.full_name.trim(),
         gender: form.gender || null,
-        grade: isMurabbi ? null : form.grade,
-        group_id: form.group_id ? Number(form.group_id) : null,
+        grade: isMurabbi || isAlumni ? null : form.grade,
+        batch: isAlumni ? Number(form.batch) : null,
+       group_id: isMurabbi || isAlumni ? null : (form.group_id ? Number(form.group_id) : null),
         requested_role: form.requested_role,
         phone: isMurabbi ? form.phone.trim() : null,
         facebook: isMurabbi ? form.facebook.trim() : null,
@@ -78,9 +81,10 @@ export default function Register({ profile, onDone }) {
 
         <label className="field">ฉันเป็น
           <select value={form.requested_role} onChange={set('requested_role')}>
-            <option value="student">นักเรียน</option>
-            <option value="murabbi">ครู / มูร๊อบบีย์ (ต้องรออนุมัติ)</option>
-          </select>
+  <option value="student">นักเรียน</option>
+  <option value="murabbi">ครู / มูร็อบบีย์ (ต้องรออนุมัติ)</option>
+  <option value="alumni">ศิษย์เก่า (ต้องรออนุมัติ)</option>
+</select>
         </label>
 
         <label className="field">ชื่อ-นามสกุล
@@ -95,7 +99,7 @@ export default function Register({ profile, onDone }) {
           </select>
         </label>
 
-        {!isMurabbi && (
+         {!isMurabbi && !isAlumni && (
           <>
             <div className="row">
               <label className="field grow">ระดับชั้น
@@ -140,6 +144,19 @@ export default function Register({ profile, onDone }) {
               <p className="muted">ยังไม่มีกลุ่มที่ตรงกับข้อมูลที่เลือก</p>
             )}
           </>
+        )}
+        {isAlumni && (
+          <label className="field">รุ่นที่ (ตัวเลข 1–999)
+            <input 
+              type="number" 
+              min="1" 
+              max="999" 
+              required 
+              placeholder="เช่น 15" 
+              value={form.batch || ''} 
+              onChange={set('batch')} 
+            />
+          </label>
         )}
 
         {isMurabbi && (
