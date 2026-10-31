@@ -5,11 +5,13 @@ import Topic from '../components/Topic.jsx'
 import { addDays, mondayOf, pct, shortDate, thaiDate, todayISO, weekRange } from '../lib.js'
 import { useStudents } from './useStudents.js'
 import { NoGroup } from './PrayerCheck.jsx'
+import { AlumniPostsManager } from './Alumni.jsx'
 
 const SUBS = [
   { key: 'members', label: 'สมาชิก' },
   { key: 'summary', label: 'สรุปสัปดาห์' },
   { key: 'posts', label: 'ประกาศ' },
+  { key: 'alumni', label: 'โพสต์ศิษย์เก่า' },
   { key: 'contact', label: 'ข้อมูลติดต่อฉัน' },
 ]
 
@@ -26,6 +28,7 @@ export default function Group({ profile, onProfileChange }) {
       {sub === 'members' && <Members profile={profile} />}
       {sub === 'summary' && <Summary profile={profile} />}
       {sub === 'posts' && <Posts profile={profile} />}
+      {sub === 'alumni' && <AlumniPostsManager profile={profile} />}
       {sub === 'contact' && <Contact profile={profile} onSaved={onProfileChange} />}
     </>
   )

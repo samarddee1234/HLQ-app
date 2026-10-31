@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 import { thaiDate } from '../lib.js'
+import { AlumniPostsManager } from './Alumni.jsx'
 
 const SUBS = [
   { key: 'users', label: 'ผู้ใช้' },
   { key: 'groups', label: 'กลุ่ม' },
+  { key: 'alumni', label: 'ศิษย์เก่า' },
   { key: 'topics', label: 'หัวข้อรายสัปดาห์' },
   { key: 'links', label: 'ลิงก์' },
   { key: 'settings', label: 'ตั้งค่า' },
@@ -22,6 +24,7 @@ export default function Admin({ profile }) {
       </div>
       {sub === 'users' && <Users me={profile} />}
       {sub === 'groups' && <Groups />}
+      {sub === 'alumni' && <AlumniPostsManager profile={profile} />}
       {sub === 'topics' && <Topics />}
       {sub === 'links' && <Links />}
       {sub === 'settings' && <Settings />}
@@ -39,9 +42,10 @@ function Users({ me }) {
   const [msg, setMsg] = useState('')
 
   async function load() {
-    let query = supabase.from('profiles').select('id,email,full_name,role,requested_role,group_id,grade,class_room,registered')
+    let query = supabase.from('profiles').select('id,email,full_name,role,requested_role,group_id,grade,class_room,registered,batch')
       .order('created_at', { ascending: false }).limit(100)
-    if (filter === 'pending') query = query.eq('requested_role', 'murabbi').eq('role', 'student')
+    if (filter === 'pending') query = query.in('requested_role', ['murabbi', 'alumni']).eq('role', 'student')
+    if (filter === 'alumni') query = query.eq('role', 'alumni').order('batch', { ascending: true })
     if (filter === 'nogroup') query = query.is('group_id', null).eq('registered', true).eq('role', 'student')
     const term = q.trim().replace(/[,()%]/g, ' ')
     if (term) query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%`)
@@ -65,7 +69,7 @@ function Users({ me }) {
     <section className="card">
       <h3>ผู้ใช้</h3>
       <div className="chips">
-        {[['pending', 'รออนุมัติเป็นครู'], ['nogroup', 'นักเรียนที่ยังไม่มีกลุ่ม'], ['all', 'ทั้งหมด']].map(([k, l]) => (
+        {[['pending', 'รออนุมัติ (ครู/ศิษย์เก่า)'], ['alumni', 'ศิษย์เก่า (เรียงตามรุ่น)'], ['nogroup', 'นักเรียนที่ยังไม่มีกลุ่ม'], ['all', 'ทั้งหมด']].map(([k, l]) => (
           <button key={k} className={`chip ${filter === k ? 'on' : ''}`} onClick={() => setFilter(k)}>{l}</button>
         ))}
       </div>
@@ -80,6 +84,8 @@ function Users({ me }) {
         <div key={u.id} className="post" style={{ whiteSpace: 'normal' }}>
           <b>{u.full_name || '(ยังไม่ลงทะเบียน)'}</b> <span className="tag">{u.role}</span>
           {u.requested_role === 'murabbi' && u.role === 'student' && <span className="tag">ขอเป็นครู</span>}
+          {u.requested_role === 'alumni' && u.role === 'student' && <span className="tag">ขอเป็นศิษย์เก่า</span>}
+          {u.batch && <span className="tag">รุ่น {u.batch}</span>}
           <div className="muted">{u.email}{u.grade ? ` · ${u.grade}/${u.class_room}` : ''}</div>
           <div className="row">
             <label className="field grow" style={{ margin: 4 }}>บทบาท
@@ -87,6 +93,7 @@ function Users({ me }) {
                 onChange={(e) => update(u.id, { role: e.target.value })}>
                 <option value="student">นักเรียน</option>
                 <option value="murabbi">มูร๊อบบีย์</option>
+                <option value="alumni">ศิษย์เก่า</option>
                 <option value="admin">แอดมิน</option>
               </select>
             </label>

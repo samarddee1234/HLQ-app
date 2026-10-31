@@ -17,8 +17,8 @@ function GenderPrompt({ profile, onSaved }) {
       <label className="field">เพศ
         <select value="" onChange={(e) => save(e.target.value)}>
           <option value="">— เลือก —</option>
-          <option value="male">มุสลีมีน</option>
-          <option value="female">มุสลีมะฮ์</option>
+          <option value="male">ชาย</option>
+          <option value="female">หญิง</option>
         </select>
       </label>
     </section>

@@ -14,6 +14,7 @@ import PrayerCheck from './pages/PrayerCheck.jsx'
 import Attendance from './pages/Attendance.jsx'
 import Group from './pages/Group.jsx'
 import Admin from './pages/Admin.jsx'
+import { AlumniHome, AlumniKnowledge, AlumniTeachers } from './pages/Alumni.jsx'
 
 const TABS = {
   home: { label: 'หน้าแรก', icon: 'home' },
@@ -26,11 +27,14 @@ const TABS = {
   attend: { label: 'เข้าฮาลาเกาะฮฺ', icon: 'calendar' },
   group: { label: 'กลุ่มของฉัน', icon: 'users' },
   admin: { label: 'แอดมิน', icon: 'shield' },
+  knowledge: { label: 'ความรู้', icon: 'book' },
+  teachers: { label: 'ติดต่อครู', icon: 'users' },
 }
 const NAV = {
   student: ['home', 'stats', 'ibadah', 'learn', 'tools', 'vent'],
   murabbi: ['home', 'prayer', 'attend', 'group', 'learn', 'tools'],
   admin: ['admin', 'learn', 'tools'],
+  alumni: ['home', 'knowledge', 'teachers', 'learn', 'tools'],
 }
 
 export default function App() {
@@ -88,7 +92,23 @@ export default function App() {
     return <Register profile={profile} onDone={() => loadProfile(session.user.id)} />
   }
 
-  const role = profile.role === 'admin' ? 'admin' : profile.role === 'murabbi' ? 'murabbi' : 'student'
+  // ศิษย์เก่าที่ยังรอแอดมินอนุมัติ: ยังไม่ให้เห็นข้อมูลใด ๆ
+  if (profile.requested_role === 'alumni' && profile.role === 'student') {
+    return (
+      <div className="center">
+        <div className="card narrow">
+          <h2>รอการอนุมัติ</h2>
+          <p>ลงทะเบียนศิษย์เก่า รุ่นที่ {profile.batch} เรียบร้อยแล้ว แอดมินจะตรวจสอบและอนุมัติให้เร็ว ๆ นี้</p>
+          <div className="row">
+            <button className="btn" onClick={() => loadProfile(session.user.id)}>ตรวจสอบสถานะ</button>
+            <button className="btn ghost" onClick={() => supabase.auth.signOut()}>ออกจากระบบ</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const role = ['admin', 'murabbi', 'alumni'].includes(profile.role) ? profile.role : 'student'
   const tabs = NAV[role]
   const current = tabs.includes(tab) ? tab : tabs[0]
   const reload = () => loadProfile(session.user.id)
@@ -97,6 +117,14 @@ export default function App() {
   let page
   if (role === 'admin') {
     page = { admin: <Admin profile={profile} />, learn: <Learn profile={profile} />, tools: <Tools /> }[current]
+  } else if (role === 'alumni') {
+    page = {
+      home: <AlumniHome profile={profile} go={setTab} />,
+      knowledge: <AlumniKnowledge />,
+      teachers: <AlumniTeachers />,
+      learn: <Learn profile={profile} />,
+      tools: <Tools />,
+    }[current]
   } else if (role === 'murabbi') {
     page = {
       home: <MHome profile={profile} go={setTab} />,

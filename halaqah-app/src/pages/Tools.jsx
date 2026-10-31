@@ -160,37 +160,121 @@ function Links() {
   )
 }
 
-/* ---------- ตัวนับซิกรุลลอฮฺ ---------- */
+/* ---------- ตัวนับซิกรุลลอฮฺ (ป๊อปอัป) ---------- */
 const TARGETS = [33, 99, 100]
+const PHRASES = [
+  { key: 'tasbih', ar: 'سُبْحَانَ اللّٰهِ', th: 'สุบฮานัลลอฮฺ' },
+  { key: 'tahmid', ar: 'الْحَمْدُ لِلّٰهِ', th: 'อัลฮัมดุลิลลาฮฺ' },
+  { key: 'takbir', ar: 'اللّٰهُ أَكْبَرُ', th: 'อัลลอฮุอักบัร' },
+  { key: 'tahlil', ar: 'لَا إِلٰهَ إِلَّا اللّٰهُ', th: 'ลาอิลาฮะ อิลลัลลอฮฺ' },
+  { key: 'istighfar', ar: 'أَسْتَغْفِرُ اللّٰهَ', th: 'อัสตัฆฟิรุลลอฮฺ' },
+]
+
+function readNum(key, fallback) {
+  try { return Number(localStorage.getItem(key)) || fallback } catch { return fallback }
+}
 
 function Dhikr() {
-  const [count, setCount] = useState(() => {
-    try { return Number(localStorage.getItem('dhikr-count')) || 0 } catch { return 0 }
+  const [open, setOpen] = useState(false)
+  const total = readNum('dhikr-count', 0)
+  return (
+    <section className="card dhikr-card">
+      <h3>ซิกรุลลอฮฺ</h3>
+      <p className="muted">กดนับซิกิรได้ง่าย ๆ ในหน้าต่างเล็ก ๆ ที่เปิดแล้วสบายตา</p>
+      <button className="btn" onClick={() => setOpen(true)}>🌙 เปิดตัวนับซิกิร</button>
+      {open && <DhikrModal onClose={() => setOpen(false)} />}
+      {!open && total > 0 && <p className="muted" style={{ marginTop: 8 }}>ค้างไว้ที่ {total} ครั้ง</p>}
+    </section>
+  )
+}
+
+function DhikrModal({ onClose }) {
+  const [count, setCount] = useState(() => readNum('dhikr-count', 0))
+  const [target, setTarget] = useState(() => readNum('dhikr-target', 33))
+  const [phrase, setPhrase] = useState(() => {
+    try { return localStorage.getItem('dhikr-phrase') || PHRASES[0].key } catch { return PHRASES[0].key }
   })
-  const [target, setTarget] = useState(33)
+  const [bump, setBump] = useState(0)
+  const [done, setDone] = useState(false)
+
   useEffect(() => {
-    try { localStorage.setItem('dhikr-count', String(count)) } catch { /* ignore */ }
-  }, [count])
+    try {
+      localStorage.setItem('dhikr-count', String(count))
+      localStorage.setItem('dhikr-target', String(target))
+      localStorage.setItem('dhikr-phrase', phrase)
+    } catch { /* ignore */ }
+  }, [count, target, phrase])
+
+  // ปิดด้วยปุ่ม Esc และล็อกการเลื่อนหน้าเบื้องหลัง
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
+  }, [onClose])
+
+  useEffect(() => {
+    if (!done) return
+    const t = setTimeout(() => setDone(false), 2200)
+    return () => clearTimeout(t)
+  }, [done])
+
+  const cur = PHRASES.find((p) => p.key === phrase) ?? PHRASES[0]
+  const inRound = count % target
+  const progress = inRound / target
+  const R = 92
+  const C = 2 * Math.PI * R
 
   function tap() {
     const next = count + 1
     setCount(next)
-    try { if (next % target === 0) navigator.vibrate?.(200) } catch { /* ignore */ }
+    setBump((b) => b + 1)
+    if (next % target === 0) {
+      setDone(true)
+      try { navigator.vibrate?.([120, 60, 120]) } catch { /* ignore */ }
+    } else {
+      try { navigator.vibrate?.(15) } catch { /* ignore */ }
+    }
   }
 
   return (
-    <section className="card">
-      <h3>ซิกรุลลอฮฺ</h3>
-      <div className="chips">
-        {TARGETS.map((t) => (
-          <button key={t} className={`chip ${target === t ? 'on' : ''}`} onClick={() => setTarget(t)}>ครบ {t}</button>
-        ))}
+    <div className="modal-back" onClick={onClose}>
+      <div className="modal" role="dialog" aria-modal="true" aria-label="ตัวนับซิกรุลลอฮฺ" onClick={(e) => e.stopPropagation()}>
+        <div className="row between">
+          <h3 style={{ margin: 0 }}>ซิกรุลลอฮฺ ✨</h3>
+          <button className="modal-x" onClick={onClose} aria-label="ปิด" autoFocus>✕</button>
+        </div>
+
+        <div className="chips phrase-chips">
+          {PHRASES.map((p) => (
+            <button key={p.key} className={`chip ${phrase === p.key ? 'on' : ''}`} onClick={() => setPhrase(p.key)}>{p.th}</button>
+          ))}
+        </div>
+        <p className="arabic dhikr-ar" lang="ar">{cur.ar}</p>
+
+        <div className="dhikr-ring">
+          <svg viewBox="0 0 220 220" aria-hidden="true">
+            <circle cx="110" cy="110" r={R} className="dr-bg" />
+            <circle cx="110" cy="110" r={R} className="dr-fg" strokeDasharray={C} strokeDashoffset={C * (1 - progress)} transform="rotate(-90 110 110)" />
+          </svg>
+          <button className="dhikr-tap" onClick={tap} aria-label={`นับเพิ่ม ตอนนี้ ${inRound} จาก ${target}`}>
+            <span key={bump} className="dhikr-num">{inRound}</span>
+            <small>จาก {target}</small>
+          </button>
+          {done && <div className="dhikr-party" role="status">🎉 มาชาอัลลอฮฺ ครบ {target} แล้ว</div>}
+        </div>
+
+        <div className="chips" style={{ justifyContent: 'center' }}>
+          {TARGETS.map((t) => (
+            <button key={t} className={`chip ${target === t ? 'on' : ''}`} onClick={() => setTarget(t)}>ครบ {t}</button>
+          ))}
+        </div>
+        <div className="row between">
+          <span className="muted">รอบที่ {Math.floor(count / target)} · รวม {count} ครั้ง</span>
+          <button className="btn ghost small" onClick={() => { setCount(0); setDone(false) }}>เริ่มใหม่</button>
+        </div>
       </div>
-      <button className="big-count" onClick={tap} aria-label="นับเพิ่ม">{count}</button>
-      <div className="row between" style={{ marginTop: 8 }}>
-        <span className="muted">รอบที่ {Math.floor(count / target)} · เหลืออีก {target - (count % target)} ครั้งจะครบ</span>
-        <button className="btn ghost small" onClick={() => setCount(0)}>เริ่มใหม่</button>
-      </div>
-    </section>
+    </div>
   )
 }

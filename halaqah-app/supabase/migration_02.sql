@@ -218,7 +218,7 @@ select * from (values
   ('quran','ซูเราะฮฺ อัรเราะห์มาน','https://quran.com/55',5),
   ('quran','ซูเราะฮฺ อัลวากิอะฮฺ','https://quran.com/56',6),
   ('quran','ซูเราะฮฺ อัลมุลก์','https://quran.com/67',7),
-  ('adhkar','ฮิศนุลมุสลิม (Hisn al-Muslim) บน Sunnah.com','https://sunnah.com/hisn',1)
+  ('adhkar','อัซการ (หนังสือออนไลน์ PubHTML5)','https://share.google/rrM6Yyfz2Kj1bKFLW',0)
 ) as v(category,title,url,sort)
 where not exists (select 1 from public.resources);
 
