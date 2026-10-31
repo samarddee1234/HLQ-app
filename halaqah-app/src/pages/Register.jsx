@@ -49,8 +49,9 @@ export default function Register({ profile, onDone }) {
     e.preventDefault()
     setErr('')
     if (!isMurabbi && !form.gender) return setErr('กรุณาเลือกเพศ')
-    if (!isMurabbi && !form.grade) return setErr('กรุณาเลือกระดับชั้น')
-    if (!isMurabbi && !form.group_id) return setErr('กรุณาเลือกกลุ่มฮาลาเกาะฮ์')
+    if (!isMurabbi && !isAlumni && !form.grade) return setErr('กรุณาเลือกระดับชั้น')
+if (!isMurabbi && !isAlumni && !form.group_id) return setErr('กรุณาเลือกกลุ่มฮาลาเกาะฮ์')
+    if (isAlumni && !form.batch) return setErr('กรุณากรอกรุ่นที่')
 
     setBusy(true)
     const { error } = await supabase
