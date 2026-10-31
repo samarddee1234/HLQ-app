@@ -90,7 +90,7 @@ export default function Register({ profile, onDone }) {
         <label className="field">เพศ
           <select required={!isMurabbi} value={form.gender} onChange={set('gender')}>
             <option value="">— เลือกเพศ —</option>
-            <option value="มุสลีมีน">มุสลีมีน (ชาย)</option>
+           <option value="มุสลิมีน">มุสลิมีน (ชาย)</option>
             <option value="มุสลิมะฮ์">มุสลิมะฮ์ (หญิง)</option>
           </select>
         </label>
