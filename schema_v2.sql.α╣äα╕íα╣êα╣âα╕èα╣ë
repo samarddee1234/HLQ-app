@@ -1,0 +1,139 @@
+-- =====================================================
+-- Halaqah App - schema v2  (รันต่อจาก schema.sql ได้เลย / รันซ้ำได้ไม่พัง)
+-- วิธีใช้: Supabase > SQL Editor > New query > วางทั้งไฟล์ > Run
+-- เพิ่ม: ระดับกลุ่ม, เพศ, หัวข้อฮาลาเกาะฮฺรายสัปดาห์ (เทอม 2/2569),
+--        สรุปรายสัปดาห์ของกลุ่ม, เช็คลิสต์อิบาดะฮฺ, สถิติรวมของกลุ่มสำหรับนักเรียน
+-- =====================================================
+
+-- ---------- คอลัมน์เพิ่มเติม ----------
+-- tier: close=กลุ่มใกล้ชิด, care=กลุ่มใส่ใจ, develop=กลุ่มพัฒนา, lead=กลุ่มนำ
+alter table public.groups add column if not exists tier text check (tier in ('close','care','develop','lead'));
+-- stage: lower=ม.ต้น, upper=ม.ปลาย
+alter table public.groups add column if not exists stage text check (stage in ('lower','upper'));
+-- เพศ ใช้แสดงตัวเลือก "รอบเดือน" เฉพาะนักเรียนหญิง
+alter table public.profiles add column if not exists gender text check (gender in ('male','female'));
+
+-- ---------- หัวข้อฮาลาเกาะฮฺรายสัปดาห์ ----------
+create table if not exists public.weekly_topics (
+  id bigint generated always as identity primary key,
+  term text not null default '2/2569',
+  week_no int not null,
+  halaqah_date date not null,          -- วันที่จัดฮาลาเกาะฮฺ (วันพุธ)
+  kind text not null default 'normal' check (kind in ('normal','exam','lecture','joint')),
+  akhlaq text,                          -- หัวข้ออัคลาก
+  fiqh text,                            -- หัวข้ออัลฟิกฮ์
+  special text,                         -- ใช้เมื่อทั้งสัปดาห์เป็นกิจกรรมเดียว เช่น ทดสอบ/ประเมิน
+  note text,                            -- หมายเหตุ เช่น ม.5 ชายพบบาบอ
+  unique (term, week_no)
+);
+
+alter table public.weekly_topics enable row level security;
+drop policy if exists topics_read on public.weekly_topics;
+create policy topics_read on public.weekly_topics for select to authenticated using (true);
+drop policy if exists topics_admin on public.weekly_topics;
+create policy topics_admin on public.weekly_topics for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- ข้อมูลจากปฏิทินกิจกรรมหลักสูตรฮาลาเกาะฮฺ ปีการศึกษา 2569 ภาคเรียนที่ 2 (ถอดจากภาพ ตรวจทานอีกครั้ง)
+insert into public.weekly_topics (term, week_no, halaqah_date, kind, akhlaq, fiqh, special, note) values
+ ('2/2569', 1,  '2026-10-21', 'joint',   null, null, 'ฮาลาเกาะฮรวม ชี้แจงของแต่ละฝ่าย', null),
+ ('2/2569', 2,  '2026-10-28', 'normal',  'ความสะอาด', 'บทที่ 29 – การอ่านซีกีรต่าง ๆ หลังละหมาด', null, null),
+ ('2/2569', 3,  '2026-11-04', 'exam',    null, null, 'ทดสอบ / ประเมิน', 'ม.5 ชายพบบาบอ'),
+ ('2/2569', 4,  '2026-11-11', 'normal',  'การแต่งกาย', 'บทที่ 30 – การขอดุอาร์ (ขอพรจากอัลลอฮฺ)', null, null),
+ ('2/2569', 5,  '2026-11-18', 'exam',    null, null, 'ทดสอบ / ประเมิน', 'ม.5 หญิงพบบาบอ'),
+ ('2/2569', 6,  '2026-11-25', 'normal',  'ชู้สาว', 'การอาบน้ำวาญิบ', null, null),
+ ('2/2569', 7,  '2026-12-02', 'exam',    null, null, 'ทดสอบ / ประเมิน', 'ม.4 ชายพบบาบอ'),
+ ('2/2569', 8,  '2026-12-09', 'lecture', null, null, 'บรรยายครั้งที่ 1 เรื่อง อบรมเชิงปฏิบัติการ เรื่องละหมาด', null),
+ ('2/2569', 9,  '2026-12-16', 'normal',  'การเยี่ยมเยียน', 'การละหมาดฎุฮา', null, null),
+ ('2/2569', 10, '2026-12-23', 'exam',    null, null, 'สอบกลางภาคศาสนา', null),
+ ('2/2569', 11, '2026-12-30', 'normal',  'การรักษาเวลา', 'การละหมาดญาเมาะ ตักดิม–ตะเคร', null, null),
+ ('2/2569', 12, '2027-01-06', 'exam',    null, null, 'ทดสอบ / ประเมิน', 'ม.4 หญิงพบบาบอ'),
+ ('2/2569', 13, '2027-01-13', 'normal',  'มารยาทในการทำงานร่วมกัน', 'ละหมาดรอวาติ๊บ', null, null),
+ ('2/2569', 14, '2027-01-20', 'exam',    null, null, 'ทดสอบ / ประเมิน', 'ม.3 ชายพบบาบอ'),
+ ('2/2569', 15, '2027-01-27', 'normal',  'ความละอาย', 'ละหมาดตะสัจญุด', null, null),
+ ('2/2569', 16, '2027-02-03', 'exam',    null, null, 'ทดสอบ / ประเมินโดยฝ่ายตัรบียะห์', 'ม.3 หญิงพบบาบอ'),
+ ('2/2569', 17, '2027-02-10', 'lecture', null, null, 'บรรยายธรรมครั้งที่ 2 เรื่อง ต้อนรับรอมฎอน', null),
+ ('2/2569', 18, '2027-02-17', 'normal',  null, null, 'ฮาลาเกาะฮอัลกุรอ่าน (ช่วงรอมฎอน)', null),
+ ('2/2569', 19, '2027-02-24', 'exam',    null, null, 'สอบปลายภาคสามัญ', null),
+ ('2/2569', 20, '2027-03-03', 'exam',    null, null, 'สอบปลายภาคศาสนา', null)
+on conflict (term, week_no) do nothing;
+
+-- ---------- สรุปฮาลาเกาะฮฺรายสัปดาห์ของกลุ่ม (มูร๊อบบีย์เขียน) ----------
+create table if not exists public.weekly_summaries (
+  id bigint generated always as identity primary key,
+  group_id bigint not null references public.groups(id) on delete cascade,
+  week_start date not null,            -- วันจันทร์ของสัปดาห์
+  content text not null,
+  created_by uuid default auth.uid() references public.profiles(id),
+  updated_at timestamptz not null default now(),
+  unique (group_id, week_start)
+);
+
+alter table public.weekly_summaries enable row level security;
+drop policy if exists summ_read on public.weekly_summaries;
+create policy summ_read on public.weekly_summaries for select to authenticated using (
+  public.is_admin() or group_id = public.my_group()
+);
+drop policy if exists summ_write on public.weekly_summaries;
+create policy summ_write on public.weekly_summaries for all to authenticated
+  using (public.is_admin() or (public.my_role() = 'murabbi' and group_id = public.my_group()))
+  with check (public.is_admin() or (public.my_role() = 'murabbi' and group_id = public.my_group()));
+
+-- ---------- เช็คลิสต์อิบาดะฮฺ (นักเรียนบันทึกเอง เห็นเฉพาะของตัวเอง) ----------
+create table if not exists public.ibadah_logs (
+  id bigint generated always as identity primary key,
+  student_id uuid not null default auth.uid() references public.profiles(id) on delete cascade,
+  log_date date not null,
+  item text not null,                  -- รหัสรายการ เช่น dhikr_morning
+  unique (student_id, log_date, item)
+);
+
+alter table public.ibadah_logs enable row level security;
+drop policy if exists ibadah_own on public.ibadah_logs;
+create policy ibadah_own on public.ibadah_logs for all to authenticated
+  using (student_id = auth.uid()) with check (student_id = auth.uid());
+
+-- ---------- สถิติรวมของกลุ่ม (ให้นักเรียนเห็นภาพรวม โดยไม่เห็นข้อมูลรายคนของเพื่อน) ----------
+create or replace function public.group_stats(weeks_back int default 8)
+returns table (
+  week_start date, members int, checked bigint, score numeric,
+  on_time bigint, late bigint, absent bigint
+)
+language sql stable security definer set search_path = public as $$
+  select
+    date_trunc('week', pc.check_date)::date as week_start,
+    count(distinct pc.student_id)::int as members,
+    count(*) as checked,
+    sum(case pc.status when 'on_time' then 1 when 'late' then 0.5
+                       when 'excused' then 1 when 'menstruation' then 1 else 0 end) as score,
+    count(*) filter (where pc.status = 'on_time') as on_time,
+    count(*) filter (where pc.status = 'late') as late,
+    count(*) filter (where pc.status = 'absent') as absent
+  from public.prayer_checks pc
+  join public.profiles p on p.id = pc.student_id
+  where p.group_id is not null
+    and p.group_id = public.my_group()
+    and pc.check_date >= (date_trunc('week', current_date) - weeks_back * interval '1 week')::date
+  group by 1
+  order by 1
+$$;
+
+revoke all on function public.group_stats(int) from public, anon;
+grant execute on function public.group_stats(int) to authenticated;
+
+-- =====================================================
+-- ตัวอย่างการสร้างกลุ่มตามโครงสร้างโรงเรียน (แก้ชื่อ/จำนวนได้ตามจริง)
+-- แต่ละกลุ่ม = ครูพี่เลี้ยง 1 คน ดูแลนักเรียนประมาณ 10-15 คน
+-- =====================================================
+-- insert into public.groups (name, tier, stage) values
+--   ('ม.ต้น กลุ่มใกล้ชิด 1', 'close',   'lower'),
+--   ('ม.ต้น กลุ่มใส่ใจ 1',   'care',    'lower'),
+--   ('ม.ต้น กลุ่มพัฒนา 1',   'develop', 'lower'),
+--   ('ม.ต้น กลุ่มนำ 1',      'lead',    'lower'),
+--   ('ม.ปลาย กลุ่มใกล้ชิด 1', 'close',   'upper'),
+--   ('ม.ปลาย กลุ่มใส่ใจ 1',   'care',    'upper'),
+--   ('ม.ปลาย กลุ่มพัฒนา 1',   'develop', 'upper'),
+--   ('ม.ปลาย กลุ่มนำ 1',      'lead',    'upper');
+--
+-- ถ้ามีกลุ่มเดิมจาก schema.sql ให้ใส่ระดับให้ด้วย:
+--   update public.groups set tier = 'close', stage = 'upper' where name = 'กลุ่มใกล้ชิด';
