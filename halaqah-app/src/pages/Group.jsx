@@ -133,17 +133,14 @@ setMsg(error ? error.message : share ? 'บันทึกแล้ว นัก
       <label className="field">สรุปสิ่งที่ได้เรียนรู้ ข้อตกลง หรือการบ้านของสัปดาห์นี้
         <textarea value={body} onChange={(e) => setBody(e.target.value)} />
       </label>
-      <label className="field">
-        <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />
-        แบ่งปันสรุปนี้กับศิษย์เก่า
-      </label>
       <label className="check-row" style={{ cursor: 'pointer' }}>
-  <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />
-  <span>แชร์สรุปนี้ให้ศิษย์เก่าอ่านด้วย
-    <span className="muted" style={{ display: 'block' }}>โปรดอย่าใส่ชื่อนักเรียนหรือเรื่องส่วนตัวในสรุปที่แชร์</span>
-  </span>
-</label>
-<button className="btn" disabled={!body.trim()} onClick={save}>บันทึกสรุป</button>
+        <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />
+        <span>แชร์สรุปนี้ให้ศิษย์เก่าอ่านด้วย
+          <span className="muted" style={{ display: 'block' }}>โปรดอย่าใส่ชื่อนักเรียนหรือเรื่องส่วนตัวในสรุปที่แชร์</span>
+        </span>
+      </label>
+      <button className="btn" disabled={!body.trim()} onClick={save}>บันทึกสรุป</button>
+    </section>
   )
 }
 
