@@ -40,23 +40,48 @@ export default function Tools() {
       <Links />
       <Dhikr />
       {/* กล่องเลือกธีมสีพาสเทล */}
-      {/* กล่องเลือกธีมสีแอป */}
+    {/* กล่องเลือกธีมสีแอป (อัปเกรดคำสั่งบังคับเปลี่ยนสี) */}
       <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', marginTop: '16px', border: '1px solid #e2e8f0' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '6px' }}>🎨 เลือกธีมสีแอป</h3>
         <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>แตะเพื่อเปลี่ยนโทนสีพื้นหลัง</p>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button type="button" onClick={() => document.body.style.backgroundColor = '#f8fafc'} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          
+          <button type="button" 
+            onClick={() => {
+              document.body.style.setProperty('background-color', '#f8fafc', 'important');
+              document.getElementById('root').style.setProperty('background-color', '#f8fafc', 'important');
+            }} 
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }}></div> มิ้นต์ (เดิม)
           </button>
-          <button type="button" onClick={() => document.body.style.backgroundColor = '#eff6ff'} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+          <button type="button" 
+            onClick={() => {
+              document.body.style.setProperty('background-color', '#eff6ff', 'important');
+              document.getElementById('root').style.setProperty('background-color', '#eff6ff', 'important');
+            }} 
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6' }}></div> ฟ้าพาสเทล
           </button>
-          <button type="button" onClick={() => document.body.style.backgroundColor = '#fdf2f8'} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+          <button type="button" 
+            onClick={() => {
+              document.body.style.setProperty('background-color', '#fdf2f8', 'important');
+              document.getElementById('root').style.setProperty('background-color', '#fdf2f8', 'important');
+            }} 
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ec4899' }}></div> ชมพูพาสเทล
           </button>
-          <button type="button" onClick={() => document.body.style.backgroundColor = '#f5f3ff'} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+          <button type="button" 
+            onClick={() => {
+              document.body.style.setProperty('background-color', '#f5f3ff', 'important');
+              document.getElementById('root').style.setProperty('background-color', '#f5f3ff', 'important');
+            }} 
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#8b5cf6' }}></div> ม่วงลาเวนเดอร์
           </button>
+
         </div>
       </div>
       {/* เรียกแสดงข้อมูลโรงเรียน */}
