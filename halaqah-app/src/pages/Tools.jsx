@@ -8,7 +8,30 @@ const CATS = [
   { key: 'dua', label: 'ดุอา' },
   { key: 'other', label: 'อื่น ๆ' },
 ]
-
+// ส่วนข้อมูลโรงเรียน
+export function SchoolContactCard() {
+  return (
+    <div style={{ background: '#ffffff', padding: '18px', borderRadius: '14px', marginTop: '16px', border: '1px solid #e2e8f0' }}>
+      <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', marginBottom: '12px' }}>
+        <div style={{ display: 'inline-block', background: '#ecfdf5', color: '#047857', fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '6px', marginBottom: '6px' }}>
+          สว • SAMARDDEE SCHOOL
+        </div>
+        <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+          โรงเรียนสามารถดีวิทยา : Samarddee Witya School
+        </h3>
+        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', marginBottom: 0 }}>
+          โรงเรียนเอกชนสอนศาสนา (อิสลาม) ควบคู่สามัญ
+        </p>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#334155' }}>
+        <div>📍 เลขที่ 218 ม.3 ต.ตะบิ้ง อ.สายบุรี จ.ปัตตานี 94110</div>
+        <a href="tel:0801388688" style={{ color: '#0284c7', textDecoration: 'none' }}>📞 080 138 8688</a>
+        <a href="https://smdw.ac.th" target="_blank" rel="noreferrer" style={{ color: '#0284c7', textDecoration: 'none' }}>🌐 เว็บไซต์: smdw.ac.th</a>
+        <a href="https://www.facebook.com/search/top?q=โรงเรียนสามารถดีวิทยา" target="_blank" rel="noreferrer" style={{ color: '#1d4ed8', textDecoration: 'none', fontWeight: '600' }}>📘 Facebook: โรงเรียนสามารถดีวิทยา</a>
+      </div>
+    </div>
+  );
+}
 export default function Tools() {
   return (
     <>
@@ -16,6 +39,59 @@ export default function Tools() {
       <HijriCalendar />
       <Links />
       <Dhikr />
+      <SchoolContactCard />
+      {/* กล่องเลือกธีมสีพาสเทล */}
+      <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', marginTop: '16px', border: '1px solid #e2e8f0' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '6px' }}>🎨 เลือกธีมสีแอป</h3>
+        <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>แตะเพื่อเปลี่ยนโทนสีที่ต้องการ</p>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {[
+            { name: 'มิ้นต์ (เดิม)', theme: '', color: '#10b981' },
+            { name: 'ฟ้าพาสเทล', theme: 'theme-sky', color: '#38bdf8' },
+            { name: 'ชมพูพาสเทล', theme: 'theme-rose', color: '#fb7185' },
+            { name: 'ม่วงลาเวนเดอร์', theme: 'theme-purple', color: '#c084fc' },
+          ].map((item) => (
+            <button
+              key={item.name}
+              type="button"
+              onClick={() => {
+                document.body.className = item.theme;
+                localStorage.setItem('app-theme', item.theme);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                background: '#f8fafc',
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+            >
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: item.color }}></span>
+              {item.name}
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* เรียกแสดงข้อมูลโรงเรียน */}
+      <SchoolContactCard />
+
+      {/* กล่องติดตั้งแอปลงมือถือ */}
+      <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', marginTop: '16px', border: '1px solid #e2e8f0' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>📲 ติดตั้งแอป & เชื่อมต่อ Excel</h3>
+        <button
+          type="button"
+          onClick={() => {
+             alert('วิธีติดตั้งลงมือถือ:\n• Android: กดจุด 3 จุดมุมขวาบน > เลือก "ติดตั้งแอป"\n• iPhone: กดปุ่มแชร์ด้านล่าง > เลือก "เพิ่มไปยังหน้าจอโฮม"');
+          }}
+          style={{ background: '#059669', color: '#fff', border: 'none', padding: '9px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
+        >
+          📥 ติดตั้งแอปลงมือถือ
+        </button>
+      </div>
     </>
   )
 }

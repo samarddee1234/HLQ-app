@@ -79,7 +79,11 @@ export default function PrayerCheck({ profile }) {
                     <select aria-label={`${s.full_name} ${p.label}`} value={values[`${s.id}|${p.key}`] ?? ''}
                       onChange={(e) => setVal(s.id, p.key, e.target.value)}>
                       <option value="">—</option>
-                      {statusesFor(s.gender).map((st) => <option key={st.key} value={st.key}>{st.label}</option>)}
+                     <option value="on_time">ทันเวลา</option>
+<option value="late">สาย</option>
+<option value="absent">ไม่ขึ้น</option>
+<option value="leave">ลากิจ/ป่วย</option>
+<option value="excused">รอบเดือน</option>
                     </select>
                   </td>
                 ))}

@@ -65,16 +65,35 @@ export default function Home({ profile, go, onProfileChange }) {
     <>
       <section className="card hero">
         <h2>อัสสะลามุอะลัยกุม {firstName(profile.full_name)}</h2>
-        <p className="muted">ขอให้เป็นวันที่ดีงามและเต็มไปด้วยความบะรอกะฮฺ</p>
+        <p className="muted">ขอให้เป็นวันที่ดีและเต็มไปด้วยความบะรอกะฮฺ</p>
       </section>
 
       {!profile.gender && <GenderPrompt profile={profile} onSaved={onProfileChange} />}
 
       <div className="grid2">
-        <div className="card stat">
-          <b>{streak}</b>
-          <span>วันติดต่อกันที่ไม่ขาดละหมาด (สเตรค)</span>
+        {/* การ์ดไฟสะสมสไตล์ Duolingo */}
+        <div className="card stat" style={{
+          background: streak > 0 ? 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)' : '#f8fafc',
+          border: `2px solid ${streak > 0 ? '#fb923c' : '#cbd5e1'}`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            width: '48px', height: '48px', borderRadius: '50%',
+            background: streak > 0 ? '#ea580c' : '#94a3b8',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: '8px',
+            boxShadow: streak > 0 ? '0 0 14px rgba(234, 88, 12, 0.5)' : 'none'
+          }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#ffffff">
+              <path d="M12 2C9.5 6 7 8.5 7 12.5C7 16.09 9.91 19 13.5 19C17.09 19 20 16.09 20 12.5C20 10.5 19 8.5 17.5 7C17.5 9 16 10.5 14.5 10.5C13 10.5 12 9 12 6.5V2ZM13.5 22C8.81 22 5 18.19 5 13.5C5 9.5 8 5.5 12 2C12 2 13 4.5 15 6.5C16.5 5 17 3.5 17 3.5C20 6.5 22 9.8 22 13.5C22 18.19 18.19 22 13.5 22Z"/>
+            </svg>
+          </div>
+          <b style={{ color: streak > 0 ? '#c2410c' : '#64748b', fontSize: '24px' }}>{streak}</b>
+          <span style={{ color: streak > 0 ? '#9a3412' : '#64748b', fontSize: '13px', textAlign: 'center' }}>
+            {streak > 0 ? 'วันติดต่อกัน (ไฟติด! 🔥)' : 'วันติดต่อกัน (ไฟดับ ✕)'}
+          </span>
         </div>
+
         <div className="card">
           <Ring value={weekPct} caption={`คะแนนสัปดาห์นี้ (${week.length} วักตู)`} />
         </div>
