@@ -103,22 +103,22 @@ function Summary({ profile }) {
   const [week, setWeek] = useState(mondayOf(todayISO()))
   const [body, setBody] = useState('')
   const [topic, setTopic] = useState(null)
+  const [share, setShare] = useState(false)
   const [msg, setMsg] = useState('')
 
-  useEffect(() => {
-    setMsg('')
-    Promise.all([
-      supabase.from('weekly_summaries').select('body').eq('group_id', profile.group_id).eq('week_start', week).maybeSingle(),
-      supabase.from('weekly_topics').select('*').eq('week_start', week).maybeSingle(),
-    ]).then(([s, t]) => { setBody(s.data?.body ?? ''); setTopic(t.data) })
-  }, [week, profile.group_id])
-
+ useEffect(() => {
+  if (!profile.group_id) return
+  Promise.all([
+    supabase.from('weekly_summaries').select('body,share_alumni').eq('group_id', profile.group_id).eq('week_start', week).maybeSingle(),
+    supabase.from('weekly_topics').select('*').eq('week_start', week).maybeSingle(),
+  ]).then(([s, t]) => { setBody(s.data?.body ?? ''); setShare(!!s.data?.share_alumni); setTopic(t.data) })
+}, [profile.group_id, week])
   async function save() {
     setMsg('')
-    const { error } = await supabase.from('weekly_summaries').upsert({
-      group_id: profile.group_id, week_start: week, body: body.trim(), updated_at: new Date().toISOString(),
-    }, { onConflict: 'group_id,week_start' })
-    setMsg(error ? error.message : 'บันทึกแล้ว นักเรียนในกลุ่มจะเห็นสรุปนี้')
+   const { error } = await supabase.from('weekly_summaries').upsert({
+  group_id: profile.group_id, week_start: week, body: body.trim(), share_alumni: share, updated_at: new Date().toISOString(),
+}, { onConflict: 'group_id,week_start' })
+setMsg(error ? error.message : share ? 'บันทึกแล้ว นักเรียนในกลุ่มและศิษย์เก่าทุกรุ่นจะเห็นสรุปนี้' : 'บันทึกแล้ว นักเรียนในกลุ่มจะเห็นสรุปนี้')
   }
 
   return (
@@ -133,9 +133,17 @@ function Summary({ profile }) {
       <label className="field">สรุปสิ่งที่ได้เรียนรู้ ข้อตกลง หรือการบ้านของสัปดาห์นี้
         <textarea value={body} onChange={(e) => setBody(e.target.value)} />
       </label>
-      <button className="btn" disabled={!body.trim()} onClick={save}>บันทึกสรุป</button>
-      {msg && <p className="msg">{msg}</p>}
-    </section>
+      <label className="field">
+        <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />
+        แบ่งปันสรุปนี้กับศิษย์เก่า
+      </label>
+      <label className="check-row" style={{ cursor: 'pointer' }}>
+  <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />
+  <span>แชร์สรุปนี้ให้ศิษย์เก่าอ่านด้วย
+    <span className="muted" style={{ display: 'block' }}>โปรดอย่าใส่ชื่อนักเรียนหรือเรื่องส่วนตัวในสรุปที่แชร์</span>
+  </span>
+</label>
+<button className="btn" disabled={!body.trim()} onClick={save}>บันทึกสรุป</button>
   )
 }
 

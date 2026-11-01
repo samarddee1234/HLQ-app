@@ -36,17 +36,20 @@ function Week({ profile }) {
     setD(null)
     ;(async () => {
       const none = Promise.resolve({ data: null })
-      const [t, s, p] = await Promise.all([
-        supabase.from('weekly_topics').select('*').eq('week_start', week).maybeSingle(),
-        profile.group_id
-          ? supabase.from('weekly_summaries').select('body,updated_at').eq('group_id', profile.group_id).eq('week_start', week).maybeSingle()
-          : none,
-        profile.group_id
-          ? supabase.from('group_posts').select('id,title,body,created_at').eq('group_id', profile.group_id)
-              .order('created_at', { ascending: false }).limit(10)
-          : Promise.resolve({ data: [] }),
-      ])
-      if (alive) setD({ topic: t.data, summary: s.data, posts: p.data ?? [] })
+    const isAlumni = profile.role === 'alumni'
+const [t, s, p, sh] = await Promise.all([
+  supabase.from('weekly_topics').select('*').eq('week_start', week).maybeSingle(),
+  profile.group_id
+    ? supabase.from('weekly_summaries').select('id,body').eq('group_id', profile.group_id).eq('week_start', week).maybeSingle()
+    : Promise.resolve({ data: null }),
+  profile.group_id
+    ? supabase.from('group_posts').select('*').eq('group_id', profile.group_id).eq('week_start', week).order('created_at', { ascending: false })
+    : Promise.resolve({ data: [] }),
+  isAlumni
+    ? supabase.from('weekly_summaries').select('id,body,groups(name)').eq('week_start', week).eq('share_alumni', true)
+    : Promise.resolve({ data: [] }),
+])
+if (alive) setD({ topic: t.data, summary: s.data, posts: p.data ?? [], shared: sh.data ?? [] })
     })()
     return () => { alive = false }
   }, [week, profile.group_id])
@@ -64,12 +67,25 @@ function Week({ profile }) {
             <h3>หัวข้อ</h3>
             <Topic topic={d.topic} />
           </section>
-          <section className="card">
-            <h3>สรุปฮาลาเกาะฮฺของกลุ่ม</h3>
-            {!profile.group_id && <p className="muted">ยังไม่ได้อยู่ในกลุ่ม</p>}
-            {profile.group_id && !d.summary && <p className="muted">ครูยังไม่ได้ลงสรุปของสัปดาห์นี้</p>}
-            {d.summary && <p className="pre">{d.summary.body}</p>}
-          </section>
+          {profile.role === 'alumni' ? (
+        <section className="card">
+          <h3>สรุปฮาลาเกาะฮฺที่มูร๊อบบีย์แชร์ให้ศิษย์เก่า</h3>
+          {d.shared.length === 0 && <p className="muted">สัปดาห์นี้ยังไม่มีสรุปที่แชร์</p>}
+          {d.shared.map((s) => (
+            <div key={s.id} className="post">
+              {s.groups?.name && <span className="tag">{s.groups.name}</span>}
+              <p className="pre">{s.body}</p>
+            </div>
+          ))}
+        </section>
+      ) : (
+        <section className="card">
+          <h3>สรุปฮาลาเกาะฮฺของกลุ่ม</h3>
+          {!profile.group_id && <p className="muted">ยังไม่ได้อยู่ในกลุ่ม</p>}
+          {profile.group_id && !d.summary && <p className="muted">ครูยังไม่ได้ลงสรุปของสัปดาห์นี้</p>}
+          {d.summary && <p className="pre">{d.summary.body}</p>}
+        </section>
+      )}
           {d.posts.length > 0 && (
             <section className="card">
               <h3>ประกาศและอัปเดตของกลุ่ม</h3>
