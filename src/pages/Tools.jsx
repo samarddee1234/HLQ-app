@@ -12,6 +12,7 @@ const CATS = [
 export default function Tools() {
   return (
     <>
+      <ThemePicker />
       <InstallApp />
       <PrayerTimes />
       <HijriCalendar />
@@ -301,5 +302,41 @@ function DhikrModal({ onClose }) {
         </div>
       </div>
     </div>
+  )
+}
+
+/* ---------- ธีมสี (จำลงบัญชี ใช้ได้ทุกเครื่อง) ---------- */
+export const THEMES = [
+  { key: 'navy', label: 'ฟ้ากรมท่า', swatch: '#4a6cc4' },
+  { key: 'sky', label: 'ฟ้าพาสเทล', swatch: '#6fb2e6' },
+  { key: 'mint', label: 'มิ้นต์', swatch: '#5fc3a3' },
+  { key: 'lavender', label: 'ลาเวนเดอร์', swatch: '#9f8cea' },
+  { key: 'pink', label: 'ชมพู', swatch: '#ee86b9' },
+]
+
+function ThemePicker() {
+  const [cur, setCur] = useState(() => document.documentElement.dataset.theme || 'navy')
+  const [msg, setMsg] = useState('')
+  async function pick(key) {
+    setCur(key)
+    document.documentElement.dataset.theme = key
+    setMsg('')
+    const { data } = await supabase.auth.getUser()
+    if (!data?.user) return
+    const { error } = await supabase.from('profiles').update({ theme: key }).eq('id', data.user.id)
+    if (error) setMsg('เปลี่ยนสีได้ในเครื่องนี้ แต่ยังบันทึกลงบัญชีไม่ได้')
+  }
+  return (
+    <section className="card">
+      <h3>ธีมสี</h3>
+      <div className="theme-grid" role="group" aria-label="เลือกธีมสี">
+        {THEMES.map((t) => (
+          <button key={t.key} type="button" className={`theme-btn ${cur === t.key ? 'on' : ''}`} aria-pressed={cur === t.key} onClick={() => pick(t.key)}>
+            <i style={{ background: t.swatch }} />{t.label}
+          </button>
+        ))}
+      </div>
+      {msg && <p className="msg" role="status">{msg}</p>}
+    </section>
   )
 }

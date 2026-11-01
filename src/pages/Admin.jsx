@@ -4,6 +4,7 @@ import { thaiDate } from '../lib.js'
 import { AlumniPostsManager } from './Alumni.jsx'
 import { AdminReport } from './Report.jsx'
 import { parseCSV, downloadCSV } from '../lib.js'
+import VentInbox from '../components/VentInbox.jsx'
 
 const SUBS = [
   { key: 'users', label: 'ผู้ใช้' },
@@ -503,40 +504,5 @@ function Settings() {
 
 /* ---------- ข้อความนิรนาม ---------- */
 function Messages() {
-  const [rows, setRows] = useState(null)
-  const [msg, setMsg] = useState('')
-
-  async function load() {
-    const { data, error } = await supabase.from('anonymous_messages').select('*').order('created_at', { ascending: false }).limit(100)
-    if (error) setMsg(error.message)
-    setRows(data ?? [])
-  }
-  useEffect(() => { load() }, [])
-  const edit = (id, k, v) => setRows(rows.map((r) => (r.id === id ? { ...r, [k]: v } : r)))
-  async function save(r) {
-    const { error } = await supabase.from('anonymous_messages').update({ status: r.status, admin_note: r.admin_note || null }).eq('id', r.id)
-    setMsg(error ? error.message : 'บันทึกแล้ว')
-  }
-
-  return (
-    <section className="card">
-      <h3>ข้อความนิรนามจากนักเรียน</h3>
-      <p className="muted">ควรมอบหมายผู้ดูแลที่เหมาะสม (เช่น ครูแนะแนว) ตรวจทุกวัน หากข้อความสื่อถึงอันตราย ให้ติดตามผ่านครูประจำชั้นหรือครูพี่เลี้ยงโดยไม่เปิดเผยว่าใครเป็นผู้ส่ง</p>
-      {msg && <p className="msg">{msg}</p>}
-      {rows && rows.length === 0 && <p className="muted">ยังไม่มีข้อความ</p>}
-      {rows?.map((r) => (
-        <div key={r.id} className="post">
-          <div>{r.body}</div>
-          <div className="muted">{thaiDate(r.created_at.slice(0, 10))}{r.topic ? ` · ${r.topic}` : ''}</div>
-          <div className="row" style={{ marginTop: 6 }}>
-            <select style={{ width: 'auto' }} value={r.status} onChange={(e) => edit(r.id, 'status', e.target.value)}>
-              <option value="new">ใหม่</option><option value="seen">อ่านแล้ว</option><option value="followed">ติดตามแล้ว</option>
-            </select>
-            <input className="grow" placeholder="บันทึกของผู้ดูแล" value={r.admin_note ?? ''} onChange={(e) => edit(r.id, 'admin_note', e.target.value)} />
-            <button className="btn small" onClick={() => save(r)}>บันทึก</button>
-          </div>
-        </div>
-      ))}
-    </section>
-  )
+  return <VentInbox admin />
 }

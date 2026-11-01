@@ -7,6 +7,10 @@ const PATHS = {
   calendar: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
   shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
   chat: 'M4 5h16v11H9l-5 4z',
+  bell: 'M6 9a6 6 0 1 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7zM10 20a2 2 0 0 0 4 0',
+  dots: 'M5 12h.01M12 12h.01M19 12h.01',
+  mail: 'M3 6h18v12H3zM3 7l9 7 9-7',
+  logout: 'M9 21H5V3h4M16 17l5-5-5-5M21 12H9',
   compass: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15 9l-2 5-5 1 2-5z',
 }
 
@@ -14,7 +18,7 @@ export default function Icon({ name, size = 20 }) {
   return (
     <svg
       width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+      strokeWidth={name === 'dots' ? 3 : 2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
     >
       <path d={PATHS[name] ?? PATHS.home} />
     </svg>

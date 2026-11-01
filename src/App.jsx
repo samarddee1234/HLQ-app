@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { supabase, configured } from './supabase.js'
 import Icon from './components/Icon.jsx'
 import Notifications from './components/Notifications.jsx'
+import VentInbox from './components/VentInbox.jsx'
+import { useBadges } from './components/useBadges.js'
 import Login from './pages/Login.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import Register from './pages/Register.jsx'
 import Home from './pages/Home.jsx'
 import Stats from './pages/Stats.jsx'
@@ -31,11 +34,12 @@ const TABS = {
   knowledge: { label: 'ความรู้', icon: 'book' },
   teachers: { label: 'ติดต่อครู', icon: 'users' },
 }
+// all = เมนูทั้งหมด (แถบข้างบนเดสก์ท็อป) / bottom = เมนูหลักที่แถบล่างบนมือถือ ที่เหลือเข้าผ่านปุ่ม "เพิ่มเติม"
 const NAV = {
-  student: ['home', 'stats', 'ibadah', 'learn', 'tools', 'vent'],
-  murabbi: ['home', 'prayer', 'attend', 'group', 'learn', 'tools'],
-  admin: ['admin', 'learn', 'tools'],
-  alumni: ['home', 'knowledge', 'teachers', 'learn', 'tools'],
+  student: { all: ['home', 'stats', 'ibadah', 'learn', 'tools', 'vent'], bottom: ['home', 'stats', 'ibadah', 'learn'] },
+  murabbi: { all: ['home', 'prayer', 'attend', 'group', 'vent', 'learn', 'tools'], bottom: ['home', 'prayer', 'attend', 'group'] },
+  admin: { all: ['admin', 'learn', 'tools'], bottom: ['admin', 'learn', 'tools'] },
+  alumni: { all: ['home', 'knowledge', 'teachers', 'learn', 'tools'], bottom: ['home', 'knowledge', 'teachers', 'learn', 'tools'] },
 }
 
 export default function App() {
@@ -43,11 +47,16 @@ export default function App() {
   const [profile, setProfile] = useState(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [tab, setTab] = useState('home')
+  const [recovery, setRecovery] = useState(false)
+  const [more, setMore] = useState(false)
 
   useEffect(() => {
     if (!configured) return
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
+      setSession(s)
+    })
     return () => sub.subscription.unsubscribe()
   }, [])
 
@@ -64,8 +73,13 @@ export default function App() {
   }, [session?.user?.id])
 
   useEffect(() => {
-    document.documentElement.dataset.theme = profile?.theme || 'navy'
+    const theme = profile?.theme || 'navy'
+    document.documentElement.dataset.theme = theme
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--g1').trim() || '#2f4a8f')
   }, [profile?.theme])
+
+  const badges = useBadges(profile ?? { id: '', role: '' })
 
   if (!configured) {
     return (
@@ -79,6 +93,7 @@ export default function App() {
   }
   if (session === undefined || loadingProfile) return <div className="center">กำลังโหลด…</div>
   if (!session) return <Login />
+  if (recovery) return <ResetPassword onDone={() => setRecovery(false)} />
   if (!profile) {
     return (
       <div className="center">
@@ -110,17 +125,22 @@ export default function App() {
   }
 
   const role = ['admin', 'murabbi', 'alumni'].includes(profile.role) ? profile.role : 'student'
-  const tabs = NAV[role]
-  const current = tabs.includes(tab) ? tab : tabs[0]
+  const nav = NAV[role]
+  const current = nav.all.includes(tab) ? tab : nav.all[0]
   const reload = () => loadProfile(session.user.id)
   const pendingMurabbi = profile.requested_role === 'murabbi' && profile.role === 'student'
+  const go = (k) => { setTab(k); setMore(false); window.scrollTo?.({ top: 0 }) }
+  const label = (k) => (role === 'murabbi' && k === 'vent' ? 'ข้อความ' : TABS[k].label)
+  const badge = (k) => (k === 'vent' && role === 'murabbi' ? badges.vent : k === 'admin' ? badges.vent : 0)
+  const moreTabs = nav.all.filter((k) => !nav.bottom.includes(k))
+  const moreBadge = moreTabs.reduce((n, k) => n + badge(k), 0)
 
   let page
   if (role === 'admin') {
     page = { admin: <Admin profile={profile} />, learn: <Learn profile={profile} />, tools: <Tools /> }[current]
   } else if (role === 'alumni') {
     page = {
-      home: <AlumniHome profile={profile} go={setTab} onProfileChange={reload} />,
+      home: <AlumniHome profile={profile} go={go} onProfileChange={reload} />,
       knowledge: <AlumniKnowledge />,
       teachers: <AlumniTeachers />,
       learn: <Learn profile={profile} />,
@@ -128,23 +148,31 @@ export default function App() {
     }[current]
   } else if (role === 'murabbi') {
     page = {
-      home: <MHome profile={profile} go={setTab} />,
+      home: <MHome profile={profile} go={go} />,
       prayer: <PrayerCheck profile={profile} />,
       attend: <Attendance profile={profile} />,
       group: <Group profile={profile} onProfileChange={reload} />,
+      vent: <VentInbox />,
       learn: <Learn profile={profile} />,
       tools: <Tools />,
     }[current]
   } else {
     page = {
-      home: <Home profile={profile} go={setTab} onProfileChange={reload} />,
+      home: <Home profile={profile} go={go} onProfileChange={reload} />,
       stats: <Stats profile={profile} />,
       ibadah: <Ibadah profile={profile} />,
       learn: <Learn profile={profile} />,
       tools: <Tools />,
-      vent: <Vent />,
+      vent: <Vent profile={profile} />,
     }[current]
   }
+
+  const navBtn = (k, cls) => (
+    <button key={k} className={`${cls} ${current === k ? 'on' : ''}`} onClick={() => go(k)} aria-current={current === k ? 'page' : undefined}>
+      <span className="ico"><Icon name={TABS[k].icon} size={22} />{badge(k) > 0 && <b className="dot">{badge(k) > 9 ? '9+' : badge(k)}</b>}</span>
+      <span>{label(k)}</span>
+    </button>
+  )
 
   return (
     <div className="app">
@@ -154,21 +182,43 @@ export default function App() {
           <span>ฮาลาเกาะฮฺ · โรงเรียนสามารถดีวิทยา</span>
         </div>
         <div className="who">{profile.full_name}</div>
-        <Notifications profile={profile} />
-        <button className="btn light" onClick={() => supabase.auth.signOut()}>ออก</button>
+        <Notifications profile={profile} go={go} />
+        <button className="btn light" onClick={() => supabase.auth.signOut()} aria-label="ออกจากระบบ">ออก</button>
       </header>
       {pendingMurabbi && (
         <div className="notice">คำขอเป็นมูร๊อบบีย์รออนุมัติจากแอดมิน ระหว่างนี้ใช้งานในฐานะนักเรียนก่อน</div>
       )}
-      <nav className="tabs" aria-label="เมนูหลัก">
-        {tabs.map((k) => (
-          <button key={k} className={`tab ${current === k ? 'on' : ''}`} onClick={() => setTab(k)}>
-            <Icon name={TABS[k].icon} size={18} />
-            {TABS[k].label}
+      <div className="shell">
+        <nav className="sidebar" aria-label="เมนูหลัก">
+          {nav.all.map((k) => navBtn(k, 'side-item'))}
+        </nav>
+        <main className="page">{page}</main>
+      </div>
+
+      <nav className="bottom-nav" aria-label="เมนูหลัก">
+        {nav.bottom.map((k) => navBtn(k, 'bn-item'))}
+        {moreTabs.length > 0 && (
+          <button className={`bn-item ${moreTabs.includes(current) ? 'on' : ''}`} onClick={() => setMore(true)} aria-haspopup="dialog">
+            <span className="ico"><Icon name="dots" size={22} />{moreBadge > 0 && <b className="dot">{moreBadge}</b>}</span>
+            <span>เพิ่มเติม</span>
           </button>
-        ))}
+        )}
       </nav>
-      <main className="page">{page}</main>
+
+      {more && (
+        <div className="sheet-back" onClick={() => setMore(false)}>
+          <div className="sheet" role="dialog" aria-label="เมนูเพิ่มเติม" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-grip" />
+            <div className="sheet-grid">
+              {moreTabs.map((k) => navBtn(k, 'sheet-item'))}
+              <button className="sheet-item" onClick={() => supabase.auth.signOut()}>
+                <span className="ico"><Icon name="logout" size={22} /></span><span>ออกจากระบบ</span>
+              </button>
+            </div>
+            <button className="btn ghost" style={{ width: '100%' }} onClick={() => setMore(false)}>ปิด</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
