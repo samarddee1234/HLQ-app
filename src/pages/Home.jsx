@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 import { Ring } from '../components/Charts.jsx'
 import Topic from '../components/Topic.jsx'
-import { addDays, attendanceLabel, calcStreak, firstName, mondayOf, pct, scoreOf, thaiDate, todayISO } from '../lib.js'
+import { GENDERS, addDays, attendanceLabel, calcStreak, firstName, mondayOf, pct, scoreOf, thaiDate, todayISO } from '../lib.js'
 
 // บัญชีที่ลงทะเบียนก่อนมีช่องเพศ ให้เลือกครั้งเดียว (ใช้กำหนดตัวเลือก "รอบเดือน" ของนักเรียนหญิง)
 function GenderPrompt({ profile, onSaved }) {
@@ -17,8 +17,7 @@ function GenderPrompt({ profile, onSaved }) {
       <label className="field">เพศ
         <select value="" onChange={(e) => save(e.target.value)}>
           <option value="">— เลือก —</option>
-          <option value="male">ชาย</option>
-          <option value="female">หญิง</option>
+          {GENDERS.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}
         </select>
       </label>
     </section>

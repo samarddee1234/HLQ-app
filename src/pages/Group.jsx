@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 import { BarChart } from '../components/Charts.jsx'
 import Topic from '../components/Topic.jsx'
-import { addDays, downloadCSV, mondayOf, pct, shortDate, thaiDate, todayISO, weekRange } from '../lib.js'
+import { addDays, downloadCSV, gradeRoom, mondayOf, pct, shortDate, thaiDate, todayISO, weekRange } from '../lib.js'
 import { useStudents } from './useStudents.js'
 import { NoGroup } from './PrayerCheck.jsx'
 import { AlumniPostsManager } from './Alumni.jsx'
@@ -64,7 +64,7 @@ function Members({ profile }) {
   const picked = students.find((s) => s.id === sel)
   const exportScores = () => downloadCSV('คะแนนละหมาดรายสัปดาห์.csv', [
     ['ชื่อ', 'ชั้น/ห้อง', ...weeks.map((w) => `สัปดาห์ ${shortDate(w)} (%)`)],
-    ...students.map((s) => [s.full_name, `${s.grade ?? ''}/${s.class_room ?? ''}`,
+    ...students.map((s) => [s.full_name, gradeRoom(s),
       ...weeks.map((w) => { const c = cell(s.id, w); const v = c ? pct(c.score, c.checked) : null; return v ?? '' })]),
   ])
 
@@ -83,7 +83,7 @@ function Members({ profile }) {
                 return (
                   <tr key={s.id} className={`clickable ${sel === s.id ? 'sel' : ''}`} onClick={() => setSel(sel === s.id ? null : s.id)}>
                     <td>{s.full_name}</td>
-                    <td>{s.grade}/{s.class_room}</td>
+                    <td>{gradeRoom(s)}</td>
                     <td>{show(c ? pct(c.score, c.checked) : null)}</td>
                     <td>{show(avg4(s.id))}</td>
                   </tr>

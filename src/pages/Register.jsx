@@ -1,35 +1,60 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabase.js'
-import { GENDERS, GRADES, stageOf } from '../lib.js'
+import { GENDERS, GRADES, GROUP_TYPES, groupGenderKey, groupMatchesGrade, murabbiNames } from '../lib.js'
 
 export default function Register({ profile, onDone }) {
   const [groups, setGroups] = useState([])
   const [form, setForm] = useState({
-    requested_role: 'student', full_name: '', gender: '', grade: GRADES[0], class_room: '',
-    group_id: '', phone: '', facebook: '', first_name: '', last_name: '', batch: '',
+    requested_role: 'student', full_name: '', gender: '', grade: GRADES[0],
+    group_type: '', group_id: '', phone: '', facebook: '', first_name: '', last_name: '', batch: '',
   })
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    supabase.from('groups').select('id,name,gender,stage').order('name').then(({ data }) => setGroups(data ?? []))
+    // groups อ่านได้ทุกคนที่ล็อกอิน ชื่อมูร๊อบบีย์อยู่ในตารางนี้เอง (murabbi_1, murabbi_2) จึงไม่ต้องอ่านตาราง profiles
+    supabase.from('groups').select('*').order('name').then(({ data }) => setGroups(data ?? []))
   }, [])
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
+  // เปลี่ยนเพศ/ชั้น แล้วต้องเลือกกลุ่มใหม่ (กลุ่มที่เลือกไว้อาจไม่ตรงแล้ว)
+  const setFilter = (k) => (e) => setForm({ ...form, [k]: e.target.value, group_type: '', group_id: '' })
   const isMurabbi = form.requested_role === 'murabbi'
   const isAlumni = form.requested_role === 'alumni'
 
-  // แสดงเฉพาะกลุ่มที่ตรงกับเพศ/ช่วงชั้นของนักเรียน (กลุ่มที่ไม่ได้ระบุ = ทุกคนเลือกได้)
-  const options = useMemo(() => {
+  // กลุ่มที่ตรงกับเพศ/ชั้นของนักเรียน (กลุ่มที่ไม่ระบุเพศ/ชั้น = ทุกคนเลือกได้)
+  const matching = useMemo(() => {
     if (isMurabbi) return groups
-    const stage = stageOf(form.grade)
-    return groups.filter((g) => (!g.gender || g.gender === form.gender) && (!g.stage || g.stage === stage))
+    return groups.filter((g) => {
+      const gk = groupGenderKey(g.gender)
+      return (!gk || gk === form.gender) && groupMatchesGrade(g, form.grade)
+    })
   }, [groups, isMurabbi, form.gender, form.grade])
+
+  // ประเภทกลุ่มที่มีให้เลือก เรียงตามลำดับ นำ > พัฒนา > ใส่ใจ > ใกล้ชิด
+  const types = useMemo(() => {
+    const found = [...new Set(matching.map((g) => g.category).filter(Boolean))]
+    const rank = (t) => { const i = GROUP_TYPES.indexOf(t); return i < 0 ? 99 : i }
+    return found.sort((a, b) => rank(a) - rank(b))
+  }, [matching])
+
+  const options = useMemo(() => {
+    if (isMurabbi || types.length === 0) return matching
+    if (!form.group_type) return []
+    return matching.filter((g) => g.category === form.group_type || !g.category)
+  }, [matching, types, form.group_type, isMurabbi])
+
+  const selected = groups.find((g) => String(g.id) === String(form.group_id))
+  const label = (g) => {
+    const m = murabbiNames(g)
+    return m.length ? `${g.name} · ${m.join(', ')}` : g.name
+  }
 
   async function submit(e) {
     e.preventDefault()
     setErr('')
     if (!isMurabbi && !form.gender) return setErr('กรุณาเลือกเพศ')
+    if (!isMurabbi && !isAlumni && !form.group_id) return setErr('กรุณาเลือกกลุ่มฮาลาเกาะฮฺ')
     const batch = Number(form.batch)
     if (isAlumni && (!Number.isInteger(batch) || batch < 1 || batch > 999)) return setErr('กรุณากรอกรุ่นที่เป็นตัวเลข เช่น 27')
     const fullName = isAlumni ? `${form.first_name.trim()} ${form.last_name.trim()}` : form.full_name.trim()
@@ -38,7 +63,7 @@ export default function Register({ profile, onDone }) {
       full_name: fullName,
       gender: form.gender || null,
       grade: isMurabbi || isAlumni ? null : form.grade,
-      class_room: isMurabbi || isAlumni ? null : form.class_room.trim(),
+      class_room: null, // ไม่เก็บห้องแล้ว
       batch: isAlumni ? batch : null,
       group_id: isAlumni || !form.group_id ? null : Number(form.group_id),
       requested_role: form.requested_role,
@@ -79,7 +104,7 @@ export default function Register({ profile, onDone }) {
           </label>
         )}
         <label className="field">เพศ
-          <select required={!isMurabbi} value={form.gender} onChange={set('gender')}>
+          <select required={!isMurabbi} value={form.gender} onChange={setFilter('gender')}>
             <option value="">— เลือก —</option>
             {GENDERS.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}
           </select>
@@ -93,28 +118,44 @@ export default function Register({ profile, onDone }) {
         )}
 
         {!isMurabbi && !isAlumni && (
-          <div className="row">
-            <label className="field grow">ระดับชั้น
-              <select value={form.grade} onChange={set('grade')}>
-                {GRADES.map((g) => <option key={g}>{g}</option>)}
-              </select>
-            </label>
-            <label className="field grow">ห้อง
-              <input required value={form.class_room} onChange={set('class_room')} placeholder="เช่น 1" />
-            </label>
-          </div>
+          <label className="field">ระดับชั้น
+            <select value={form.grade} onChange={setFilter('grade')}>
+              {GRADES.map((g) => <option key={g}>{g}</option>)}
+            </select>
+          </label>
+        )}
+
+        {!isMurabbi && !isAlumni && types.length > 0 && (
+          <label className="field">ประเภทกลุ่มฮาลาเกาะฮฺ
+            <select required value={form.group_type} onChange={(e) => setForm({ ...form, group_type: e.target.value, group_id: '' })}>
+              <option value="">— เลือกประเภทกลุ่ม —</option>
+              {types.map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </label>
         )}
 
         {!isAlumni && (
-        <label className="field">{isMurabbi ? 'กลุ่มที่ดูแล (แอดมินจะยืนยันอีกครั้ง)' : 'กลุ่มฮาลาเกาะฮฺของฉัน'}
-          <select required={!isMurabbi} value={form.group_id} onChange={set('group_id')}>
-            <option value="">— เลือกกลุ่ม —</option>
-            {options.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-        </label>
+          <label className="field">{isMurabbi ? 'กลุ่มที่ดูแล (แอดมินจะยืนยันอีกครั้ง)' : 'กลุ่มฮาลาเกาะฮฺของฉัน'}
+            <select required={!isMurabbi} value={form.group_id} onChange={set('group_id')}
+              disabled={!isMurabbi && types.length > 0 && !form.group_type}>
+              <option value="">{!isMurabbi && types.length > 0 && !form.group_type ? '— เลือกประเภทกลุ่มก่อน —' : '— เลือกกลุ่ม —'}</option>
+              {options.map((g) => <option key={g.id} value={g.id}>{label(g)}</option>)}
+            </select>
+          </label>
         )}
+
+        {!isMurabbi && !isAlumni && selected && (
+          <div className="murabbi-card" role="status">
+            <b>{selected.name}</b>
+            {murabbiNames(selected).length > 0
+              ? <div>มูร๊อบบีย์ประจำกลุ่ม: {murabbiNames(selected).join(' · ')}</div>
+              : <div className="muted">ยังไม่ได้ระบุมูร๊อบบีย์ของกลุ่มนี้ กรุณาแจ้งแอดมิน</div>}
+            <small className="muted">ถ้าชื่อครูไม่ตรงกับครูของคุณ ให้เปลี่ยนกลุ่มก่อนกดบันทึก เพราะลงทะเบียนแล้วย้ายกลุ่มเองไม่ได้</small>
+          </div>
+        )}
+
         {isAlumni && <p className="muted">ระบบจะจัดคุณอยู่ในกลุ่มของรุ่นที่กรอก หลังแอดมินตรวจสอบและอนุมัติแล้ว</p>}
-        {!isMurabbi && !isAlumni && options.length === 0 && (
+        {!isMurabbi && !isAlumni && form.gender && matching.length === 0 && (
           <p className="muted">ยังไม่มีกลุ่มที่ตรงกับเพศ/ชั้นของคุณ กรุณาแจ้งแอดมินให้เพิ่มกลุ่มก่อน</p>
         )}
 
@@ -130,7 +171,7 @@ export default function Register({ profile, onDone }) {
         )}
 
         <button className="btn" disabled={busy}>บันทึกและเริ่มใช้งาน</button>
-        {err && <p className="msg err">{err}</p>}
+        {err && <p className="msg err" role="alert">{err}</p>}
         <p className="muted">หลังลงทะเบียนแล้ว การย้ายกลุ่มต้องให้แอดมินทำให้</p>
       </form>
     </div>

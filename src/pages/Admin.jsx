@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
-import { thaiDate } from '../lib.js'
+import { GENDERS, GRADES, GROUP_TYPES, groupGenderKey, gradeRoom, thaiDate } from '../lib.js'
 import { AlumniPostsManager } from './Alumni.jsx'
 import { AdminReport } from './Report.jsx'
 import { parseCSV, downloadCSV } from '../lib.js'
@@ -91,7 +91,7 @@ function Users({ me }) {
           {u.requested_role === 'murabbi' && u.role === 'student' && <span className="tag">ขอเป็นครู</span>}
           {u.requested_role === 'alumni' && u.role === 'student' && <span className="tag">ขอเป็นศิษย์เก่า</span>}
           {u.batch && <span className="tag">รุ่น {u.batch}</span>}
-          <div className="muted">{u.email}{u.grade ? ` · ${u.grade}/${u.class_room}` : ''}</div>
+          <div className="muted">{u.email}{u.grade ? ` · ${gradeRoom(u)}` : ''}</div>
           <div className="row">
             <label className="field grow" style={{ margin: 4 }}>บทบาท
               <select value={u.role} disabled={u.id === me.id}
@@ -118,8 +118,9 @@ function Users({ me }) {
 
 /* ---------- กลุ่มฮาลาเกาะฮฺ ---------- */
 function Groups() {
+  const EMPTY = { name: '', gender: '', category: '', grade: '', murabbi_1: '', murabbi_2: '' }
   const [rows, setRows] = useState(null)
-  const [draft, setDraft] = useState({ name: '', gender: '', stage: '' })
+  const [draft, setDraft] = useState(EMPTY)
   const [msg, setMsg] = useState('')
 
   async function load() {
@@ -128,7 +129,10 @@ function Groups() {
   }
   useEffect(() => { load() }, [])
 
-  const clean = (g) => ({ name: g.name.trim(), gender: g.gender || null, stage: g.stage || null })
+  const clean = (g) => ({
+    name: g.name.trim(), gender: groupGenderKey(g.gender), category: g.category || null, grade: g.grade || null,
+    murabbi_1: (g.murabbi_1 ?? '').trim() || null, murabbi_2: (g.murabbi_2 ?? '').trim() || null,
+  })
 
   async function save(g) {
     const { error } = await supabase.from('groups').update(clean(g)).eq('id', g.id)
@@ -139,7 +143,7 @@ function Groups() {
     e.preventDefault()
     const { error } = await supabase.from('groups').insert(clean(draft))
     setMsg(error ? error.message : 'เพิ่มกลุ่มแล้ว')
-    if (!error) setDraft({ name: '', gender: '', stage: '' })
+    if (!error) setDraft(EMPTY)
     load()
   }
   async function remove(g) {
@@ -150,29 +154,41 @@ function Groups() {
   }
   const edit = (id, k, v) => setRows(rows.map((r) => (r.id === id ? { ...r, [k]: v } : r)))
 
-  const GenderSel = ({ v, on }) => (
-    <select value={v ?? ''} onChange={(e) => on(e.target.value)}>
-      <option value="">ทุกเพศ</option><option value="male">ชาย</option><option value="female">หญิง</option>
-    </select>
-  )
-  const StageSel = ({ v, on }) => (
-    <select value={v ?? ''} onChange={(e) => on(e.target.value)}>
-      <option value="">ทุกช่วงชั้น</option><option value="ม.ต้น">ม.ต้น</option><option value="ม.ปลาย">ม.ปลาย</option>
-    </select>
+  // ช่องเลือก/กรอกของกลุ่ม ใช้ร่วมกันทั้งแถวเดิมและฟอร์มเพิ่มกลุ่ม
+  const Fields = ({ g, on }) => (
+    <>
+      <div className="row">
+        <select aria-label="เพศ" value={groupGenderKey(g.gender) ?? ''} onChange={(e) => on('gender', e.target.value)}>
+          <option value="">ทุกเพศ</option>
+          {GENDERS.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
+        </select>
+        <select aria-label="ชั้น" value={g.grade ?? ''} onChange={(e) => on('grade', e.target.value)}>
+          <option value="">ทุกชั้น</option>
+          {GRADES.map((x) => <option key={x}>{x}</option>)}
+        </select>
+        <select aria-label="ประเภทกลุ่ม" value={g.category ?? ''} onChange={(e) => on('category', e.target.value)}>
+          <option value="">ไม่ระบุประเภท</option>
+          {GROUP_TYPES.map((x) => <option key={x}>{x}</option>)}
+        </select>
+      </div>
+      <div className="row" style={{ marginTop: 6 }}>
+        <input className="grow" aria-label="มูร๊อบบีย์คนที่ 1" placeholder="มูร๊อบบีย์คนที่ 1" value={g.murabbi_1 ?? ''} onChange={(e) => on('murabbi_1', e.target.value)} />
+        <input className="grow" aria-label="มูร๊อบบีย์คนที่ 2" placeholder="มูร๊อบบีย์คนที่ 2 (ถ้ามี)" value={g.murabbi_2 ?? ''} onChange={(e) => on('murabbi_2', e.target.value)} />
+      </div>
+    </>
   )
 
   return (
     <>
       <section className="card">
         <h3>กลุ่มฮาลาเกาะฮฺ</h3>
-        <p className="muted">แนะนำให้ตั้งชื่อกลุ่มตามชื่อครูหรือรหัสกลุ่ม ไม่ควรใช้ชื่อระดับกลุ่ม (เช่น กลุ่มใกล้ชิด) เพื่อไม่ให้นักเรียนถูกตีตรา</p>
+        <p className="muted">นักเรียนเลือกกลุ่มตอนลงทะเบียนจากเพศ ชั้น และประเภทกลุ่ม แล้วระบบแสดงชื่อมูร๊อบบีย์ให้ตรวจสอบ ชื่อมูร๊อบบีย์ในช่องนี้ใช้แสดงเท่านั้น สิทธิ์ดูข้อมูลของครูยังผูกกับบัญชีที่แอดมินกำหนดในแท็บ "ผู้ใช้" เหมือนเดิม</p>
         {msg && <p className="msg">{msg}</p>}
         {rows?.map((g) => (
           <div key={g.id} className="post" style={{ whiteSpace: 'normal' }}>
-            <input value={g.name} onChange={(e) => edit(g.id, 'name', e.target.value)} />
+            <input aria-label="ชื่อกลุ่ม" value={g.name} onChange={(e) => edit(g.id, 'name', e.target.value)} />
+            <div style={{ marginTop: 6 }}><Fields g={g} on={(k, v) => edit(g.id, k, v)} /></div>
             <div className="row" style={{ marginTop: 6 }}>
-              <GenderSel v={g.gender} on={(v) => edit(g.id, 'gender', v)} />
-              <StageSel v={g.stage} on={(v) => edit(g.id, 'stage', v)} />
               <button className="btn small" onClick={() => save(g)}>บันทึก</button>
               <button className="btn small danger" onClick={() => remove(g)}>ลบ</button>
             </div>
@@ -181,13 +197,10 @@ function Groups() {
       </section>
       <form className="card" onSubmit={add}>
         <h3>เพิ่มกลุ่มใหม่</h3>
-        <label className="field">ชื่อกลุ่ม
+        <label className="field">ชื่อกลุ่ม (เช่น กลุ่มนำ ม.6 หญิง)
           <input required value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
         </label>
-        <div className="row">
-          <GenderSel v={draft.gender} on={(v) => setDraft({ ...draft, gender: v })} />
-          <StageSel v={draft.stage} on={(v) => setDraft({ ...draft, stage: v })} />
-        </div>
+        <Fields g={draft} on={(k, v) => setDraft({ ...draft, [k]: v })} />
         <button className="btn" style={{ marginTop: 10 }}>เพิ่มกลุ่ม</button>
       </form>
     </>

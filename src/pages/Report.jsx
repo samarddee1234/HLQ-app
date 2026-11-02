@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabase.js'
 import { REPORT_THRESHOLDS } from '../config.js'
-import { academicYearStart, downloadCSV, mondayOf, pct, thaiDate, toBuddhistYear, todayISO } from '../lib.js'
+import { academicYearStart, downloadCSV, gradeRoom, mondayOf, pct, thaiDate, toBuddhistYear, todayISO } from '../lib.js'
 import { useStudents } from './useStudents.js'
 
 const LEVELS = [1, 2, 3, 4, 5]
@@ -72,7 +72,7 @@ export default function YearEndReport({ groupId }) {
   function exportCSV() {
     downloadCSV(`รายงานปลายปี-${year}.csv`, [
       ['ชื่อ', 'ชั้น/ห้อง', 'อีบาดะฮฺ (%)', 'การเข้าร่วมฮาลาเกาะฮฺ (%)', 'มารยาท (1-5)', 'การเรียน (1-5)', 'คะแนนรวม (%)', 'ข้อเสนอแนะเบื้องต้น'],
-      ...rows.map((x) => [x.s.full_name, `${x.s.grade ?? ''}/${x.s.class_room ?? ''}`, fmt(x.ibadah), fmt(x.attend),
+      ...rows.map((x) => [x.s.full_name, gradeRoom(x.s), fmt(x.ibadah), fmt(x.attend),
         ratings[x.s.id]?.akhlaq ?? '', ratings[x.s.id]?.study ?? '', fmt(x.total), x.suggest]),
     ])
   }
