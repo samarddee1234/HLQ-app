@@ -394,3 +394,8 @@ fieldset.aud legend { font-size: 15px; color: var(--muted); padding: 0; margin-b
 :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .sheet, .sheet-back, .mascot, .btn { animation: none; transition: none; } }
 @media print { .bottom-nav, .sidebar, .sheet-back { display: none !important; } .shell { display: block; } }
+
+/* ---------- การ์ดแสดงมูร๊อบบีย์ตอนเลือกกลุ่ม ---------- */
+.murabbi-card { margin: 10px 0; padding: 12px 14px; border-radius: 16px; background: var(--sky); border: 1.5px solid var(--line); border-left: 5px solid var(--navy-2); }
+.murabbi-card b { display: block; color: var(--navy); }
+.murabbi-card small { display: block; margin-top: 6px; }

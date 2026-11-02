@@ -143,10 +143,32 @@ export function aggregateByWeek(rows, weeks) {
 // =====================================================
 export { IBADAH_ITEMS } from './content.js'
 
+// ค่าที่เก็บในฐานข้อมูลยังเป็น male/female (ระบบสถานะรอบเดือนอ้างอิงค่านี้) เปลี่ยนเฉพาะคำที่แสดง
 export const GENDERS = [
-  { key: 'male', label: 'ชาย' },
-  { key: 'female', label: 'หญิง' },
+  { key: 'male', label: 'มุสลิมีน' },
+  { key: 'female', label: 'มุสลิมะฮ์' },
 ]
+
+// ประเภทกลุ่มฮาลาเกาะฮฺ (เรียงตามลำดับที่แสดง)
+export const GROUP_TYPES = ['กลุ่มนำ', 'กลุ่มพัฒนา', 'กลุ่มใส่ใจ', 'กลุ่มใกล้ชิด']
+
+// เพศของกลุ่มในตาราง groups อาจเก็บเป็น male/female หรือ มุสลิมีน/มุสลิมะฮ์ ก็ได้ ว่าง = ทุกเพศ
+export function groupGenderKey(v) {
+  const s = String(v ?? '').replace(/\s/g, '')
+  if (['male', 'มุสลิมีน', 'ชาย'].includes(s)) return 'male'
+  if (['female', 'มุสลิมะฮ์', 'มุสลิมะฮฺ', 'หญิง'].includes(s)) return 'female'
+  return null
+}
+// ชั้นของกลุ่มอาจเป็น ม.6 หรือ ม.ต้น/ม.ปลาย ว่าง = ทุกชั้น
+export function groupMatchesGrade(g, grade) {
+  const v = String(g?.grade ?? '').replace(/\s/g, '')
+  return !v || v === grade || v === stageOf(grade)
+}
+// ชื่อมูร๊อบบีย์ของกลุ่ม (ตัดช่องว่างและ "-")
+export const murabbiNames = (g) =>
+  [g?.murabbi_1, g?.murabbi_2].map((x) => String(x ?? '').trim()).filter((x) => x && x !== '-')
+// ชั้น/ห้อง สำหรับแสดงผล (นักเรียนใหม่ไม่มีห้องแล้ว)
+export const gradeRoom = (s) => (s?.class_room ? `${s.grade ?? ''}/${s.class_room}` : s?.grade ?? '')
 
 // ม.1-3 = ม.ต้น, ม.4-6 = ม.ปลาย (ตรงกับค่า stage ในตาราง groups)
 export function stageOf(grade) {
